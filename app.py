@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+from models import Generation, SessionLocal
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import openai
@@ -24,7 +28,7 @@ def generate_image():
         image_bytes = image_file.read()
         base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-        # Call GPT-Image-1 (replace with actual API call once available)
+        # Call GPT-Image-1
         response = openai.Image.create_edit(
             image=base64_image,
             prompt=prompt,
@@ -32,7 +36,16 @@ def generate_image():
             response_format="url"
         )
 
-        return jsonify({"image_url": response["data"][0]["url"]})
+        image_url = response["data"][0]["url"]
+
+        # Save to database
+        db = SessionLocal()
+        entry = Generation(prompt=prompt, image_url=image_url)
+        db.add(entry)
+        db.commit()
+        db.close()
+
+        return jsonify({"image_url": image_url})
 
     except Exception as e:
         print("Error:", e)
