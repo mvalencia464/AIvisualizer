@@ -53,3 +53,23 @@ def generate_image():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+@app.route("/history", methods=["GET"])
+def get_history():
+    try:
+        db = SessionLocal()
+        entries = db.query(Generation).order_by(Generation.created_at.desc()).limit(10).all()
+        db.close()
+
+        return jsonify([
+            {
+                "id": entry.id,
+                "prompt": entry.prompt,
+                "image_url": entry.image_url,
+                "created_at": entry.created_at.isoformat()
+            }
+            for entry in entries
+        ])
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"error": str(e)}), 500
